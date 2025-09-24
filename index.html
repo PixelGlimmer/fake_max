@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход по номеру телефона</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f7;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #1d1d1f;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1d1d1f;
+        }
+        
+        .header p {
+            font-size: 16px;
+            color: #86868b;
+            line-height: 1.4;
+        }
+        
+        .phone-number {
+            background: #f5f5f7;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 500;
+            color: #1d1d1f;
+        }
+        
+        .note {
+            font-size: 14px;
+            color: #86868b;
+            text-align: center;
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+        
+        .continue-btn {
+            width: 100%;
+            background: #0071e3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .continue-btn:hover {
+            background: #0077ed;
+        }
+        
+        .continue-btn:disabled {
+            background: #c7c7cc;
+            cursor: not-allowed;
+        }
+        
+        .legal {
+            font-size: 12px;
+            color: #86868b;
+            text-align: center;
+            margin-top: 20px;
+            line-height: 1.4;
+        }
+        
+        .error-message {
+            background: #fff0f0;
+            border: 1px solid #ff3b30;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #d70015;
+            text-align: center;
+            display: none;
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #0071e3;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .phone-input {
+            display: none;
+            margin-bottom: 20px;
+        }
+        
+        .phone-input input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #c7c7cc;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .change-number {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .change-number-btn {
+            background: none;
+            border: none;
+            color: #0071e3;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>С каким номером телефона хотите войти?</h1>
+            <p>На него придёт СМС с кодом</p>
+        </div>
+        
+        <div class="phone-number" id="displayPhone">+7 123 456-78-90</div>
+        
+        <div class="phone-input" id="phoneInput">
+            <input type="tel" id="phoneEdit" placeholder="+7 (XXX) XXX-XX-XX">
+        </div>
+        
+        <div class="change-number">
+            <button class="change-number-btn" id="changeNumberBtn">Изменить номер</button>
+        </div>
+        
+        <div class="note">Для входа нужен номер из России или Беларуси</div>
+        
+        <button class="continue-btn" id="continueBtn">Продолжить</button>
+        
+        <div class="legal">
+            Нажимая «Продолжить», вы принимаете политику конфиденциальности и пользовательское соглашение
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+        </div>
+        
+        <div class="error-message" id="errorMessage">
+            <strong>Неизвестная ошибка системы</strong><br>
+            Код ошибки: #ERR_<span id="errorCode">0</span><br>
+            Попробуйте позже
+        </div>
+    </div>
+
+    <script>
+        const displayPhone = document.getElementById('displayPhone');
+        const phoneInput = document.getElementById('phoneInput');
+        const phoneEdit = document.getElementById('phoneEdit');
+        const changeNumberBtn = document.getElementById('changeNumberBtn');
+        const continueBtn = document.getElementById('continueBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorCode = document.getElementById('errorCode');
+
+        let isEditing = false;
+
+        // Функция для форматирования номера телефона
+        function formatPhoneNumber(phone) {
+            const numbers = phone.replace(/\D/g, '');
+            if (numbers.startsWith('7') || numbers.startsWith('8')) {
+                const mainNumber = numbers.substring(1);
+                return `+7 ${mainNumber.substring(0, 3)} ${mainNumber.substring(3, 6)}-${mainNumber.substring(6, 8)}-${mainNumber.substring(8, 10)}`;
+            }
+            return phone;
+        }
+
+        // Обработчик кнопки "Изменить номер"
+        changeNumberBtn.addEventListener('click', function() {
+            if (!isEditing) {
+                phoneInput.style.display = 'block';
+                displayPhone.style.display = 'none';
+                changeNumberBtn.textContent = 'Отмена';
+                phoneEdit.value = '+7 ';
+                phoneEdit.focus();
+            } else {
+                phoneInput.style.display = 'none';
+                displayPhone.style.display = 'block';
+                changeNumberBtn.textContent = 'Изменить номер';
+            }
+            isEditing = !isEditing;
+        });
+
+        // Маска для ввода номера телефона
+        phoneEdit.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            
+            if (value.startsWith('7') || value.startsWith('8')) {
+                value = value.substring(1);
+            }
+            
+            let formattedValue = '+7 ';
+            
+            if (value.length > 0) {
+                formattedValue += value.substring(0, 3);
+            }
+            if (value.length > 3) {
+                formattedValue += ' ' + value.substring(3, 6);
+            }
+            if (value.length > 6) {
+                formattedValue += '-' + value.substring(6, 8);
+            }
+            if (value.length > 8) {
+                formattedValue += '-' + value.substring(8, 10);
+            }
+            
+            e.target.value = formattedValue;
+            
+            // Обновляем отображаемый номер
+            displayPhone.textContent = formattedValue || '+7 123 456-78-90';
+        });
+
+        // Обработчик кнопки "Продолжить"
+        continueBtn.addEventListener('click', function() {
+            const phone = isEditing ? phoneEdit.value : displayPhone.textContent;
+            
+            // Проверяем, что номер введен
+            if (!phone || phone.replace(/\D/g, '').length < 11) {
+                alert('Пожалуйста, введите корректный номер телефона');
+                return;
+            }
+
+            // Показываем загрузку
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+            continueBtn.disabled = true;
+
+            // Имитируем задержку отправки СМС
+            setTimeout(function() {
+                loading.style.display = 'none';
+                continueBtn.disabled = false;
+
+                // Показываем случайную ошибку
+                const randomCode = Math.floor(Math.random() * 10000);
+                errorCode.textContent = randomCode;
+                
+                errorMessage.style.display = 'block';
+                errorMessage.style.animation = 'none';
+                setTimeout(() => {
+                    errorMessage.style.animation = 'shake 0.5s ease-in-out';
+                }, 10);
+
+            }, 2000);
+        });
+
+        // Автоматическое форматирование при загрузке
+        window.addEventListener('load', function() {
+            displayPhone.textContent = formatPhoneNumber(displayPhone.textContent);
+        });
+    </script>
+</body>
+</html>
